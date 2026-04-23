@@ -1,0 +1,355 @@
+html {
+    background-color: transparent !important;
+}
+
+/* تنسيق المربع المنبثق (Modal) */
+#addNodeModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    width: 300px;
+}
+
+#tree {
+    width: 100%;
+    height: 100vh;
+    /* vh يعني بياخد طول الشاشة المتاحة كلها */
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    /* عشان ميعملش Scrollbar يضايقك */
+    background-color: transparent !important;
+    /* ← أضف السطر ده */
+
+}
+
+/* تنسيق العناوين داخل الموديل */
+#addNodeModal h3 {
+    text-align: center;
+    color: #333;
+    margin-top: 0;
+}
+
+/* تنسيق خانات الإدخال (Inputs) */
+#addNodeModal input[type="text"] {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+    /* عشان الـ padding ميبوظش العرض */
+}
+
+/* تنسيق حاوية الأزرار */
+.modal-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* تنسيق الأزرار العام */
+.btn {
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* زرار الحفظ */
+.btn-save {
+    background: #039be5;
+}
+
+/* زرار الإلغاء */
+.btn-cancel {
+    background: #e53935;
+}
+
+/* الطبقة السوداء الشفافة خلف الموديل */
+#modalOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+:root {
+    --count: 5;
+    --radius: 6rem;
+    --toggle-size: 4rem;
+    --item-size: 3.5rem;
+    --gap: 0.4rem;
+    --bg: #f4f5f7;
+    --fg: #2c2f36;
+    --muted: rgba(0, 0, 0, 0.05);
+    --shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+    --duration: 200ms;
+    --offset: -0.25turn;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "JetBrains Mono", sans-serif;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    background-color: #232323 !important;
+    color: var(--fg);
+    display: grid;
+    place-items: center;
+    margin: 0;
+    overflow: hidden;
+    /* عشان يمنع السكرول بار */
+}
+
+nav.menu {
+    position: relative;
+    width: max(var(--toggle-size), var(--radius) * 2 + var(--item-size));
+    height: max(var(--toggle-size), var(--radius) * 2 + var(--item-size));
+    display: grid;
+    place-content: center;
+}
+
+nav label {
+    width: var(--toggle-size);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: all var(--duration) ease;
+    position: relative;
+    z-index: 2;
+    user-select: none;
+}
+
+nav label:active {
+    transform: scale(0.94);
+}
+
+.burger {
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    gap: var(--gap);
+}
+
+.burger span {
+    display: block;
+    height: 3px;
+    border-radius: 2px;
+    background: black;
+    transition: all var(--duration) ease;
+}
+
+ul.menu-list {
+    list-style: none;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    transform: rotate(-90deg);
+    transition: all calc(var(--duration) * 1.5) ease;
+}
+
+ul.menu-list li {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--item-size);
+    height: var(--item-size);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%) rotate(calc((var(--i) * 1turn / var(--count)) + var(--offset))) translate(0) rotate(calc(-1 * var(--i) * 1turn / var(--count)));
+    transform-origin: center center;
+    opacity: 0;
+    transition: inherit;
+}
+
+ul.menu-list a {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    text-decoration: none;
+    color: inherit;
+    outline: none;
+    will-change: transform;
+    transition: transform var(--duration) ease;
+}
+
+ul.menu-list a::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    padding: 10px;
+    background: linear-gradient(to right bottom,
+            var(--muted),
+            transparent,
+            var(--muted));
+    z-index: -1 !important;
+    border-radius: 50%;
+}
+
+ul.menu-list a:focus-visible {
+    box-shadow:
+        0 0 0 3px rgba(59, 130, 246, 0.35),
+        var(--shadow);
+}
+
+ul.menu-list a:hover {
+    transform: scale(1.1);
+    filter: brightness(1.03);
+}
+
+span.icon {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+}
+
+span.icon img {
+    width: 50%;
+    height: 50%;
+}
+
+#toggle:checked~ul.menu-list li {
+    transform: translate(-50%, -50%) rotate(calc((var(--i) * 1turn / var(--count)) + var(--offset))) translate(var(--radius)) rotate(calc(-1 * var(--i) * 1turn / var(--count)));
+    opacity: 1;
+}
+
+#toggle:checked~ul.menu-list {
+    transform: rotate(0);
+}
+
+#toggle:checked~ul.menu-list a {
+    transform: rotate(.25turn);
+}
+
+#toggle:checked+label .burger span:nth-child(1) {
+    transform: translateY(calc(var(--gap) + 100%)) rotate(.125turn);
+}
+
+#toggle:checked+label .burger span:nth-child(2) {
+    opacity: 0;
+}
+
+#toggle:checked+label .burger span:nth-child(3) {
+    transform: translateY(calc(-1 * var(--gap) - 100%)) rotate(-.125turn);
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+
+.menu {
+    position: fixed !important;
+    top: 20px;
+    right: 20px;
+    z-index: 9999 !important;
+    margin: 0;
+    padding: 0;
+    cursor: grab;
+    /* ← يخلي المؤشر يبان إيد لما تحوم عليه */
+    user-select: none;
+}
+
+.menu:active {
+    cursor: grabbing;
+    /* ← لما تمسكه يبان إيد مقبوضة */
+}
+
+/* Reduces motion for users who are sensitive to animation */
+@media (prefers-reduced-motion: reduce) {
+
+    ul.menu-list li,
+    label .burger span {
+        transition: none !important;
+    }
+}
+
+
+
+
+
+
+#context-menu {
+    position: fixed;
+    width: 0;
+    height: 0;
+    z-index: 9999;
+}
+
+.context-btn {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* حركة ارتدادية شيك */
+    transform: translate(-50%, -50%) scale(0);
+    /* بيبدأ من النص وصغير */
+}
+
+/* توزيع الزوايا (نص دائرة فوق مثلاً) */
+/* زرار المسح - زاوية 180 (شمال) */
+.context-btn.show:nth-child(1) {
+    opacity: 1;
+    transform: translate(-70px, -50%) scale(1);
+}
+
+/* زرار التعديل - زاوية 270 (فوق) */
+.context-btn.show:nth-child(2) {
+    opacity: 1;
+    transform: translate(-50%, -70px) scale(1);
+}
+
+/* زرار الإضافة - زاوية 0 (يمين) */
+.context-btn.show:nth-child(3) {
+    opacity: 1;
+    transform: translate(25px, -50%) scale(1);
+}
