@@ -9,6 +9,7 @@
         content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://balkan.app https://cdnjs.cloudflare.com;">
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script>
@@ -117,97 +118,85 @@
             menuButton: {
                 text: "إضافة",
                 onClick: function(nodeId) {
-                    document.getElementById('parent_id').value = nodeId;
-                    document.getElementById('addNodeModal').style.display = 'block';
-                    document.getElementById('modalOverlay').style.display = 'block';
+                    $('#parent_id').val(nodeId);
+                    $('#addNodeModal, #modalOverlay').show();
                 }
             }
         });
 
         // 3. كليك يمين
-        document.getElementById('tree').addEventListener('contextmenu', function(event) {
+        $('#tree').on('contextmenu', function(event) {
             event.preventDefault();
-            var nodeElement = event.target.closest('[data-n-id]');
-            if (nodeElement) {
-                var employeeId = nodeElement.getAttribute('data-n-id');
-                var oldMenu = document.getElementById('context-menu');
-                if (oldMenu) oldMenu.remove();
-                var menu = document.createElement('div');
-                menu.id = 'context-menu';
-                menu.style.left = event.clientX + 'px';
-                menu.style.top = event.clientY + 'px';
-                menu.innerHTML = `
-                    <button class="context-btn" style="background:#f44336;" onclick="deleteEmployee(${employeeId})">🗑️</button>
-                    <button class="context-btn" style="background:#2196F3;" onclick="editEmployee(${employeeId})">✏️</button>
-                    <button class="context-btn" style="background:#4CAF50;" onclick="addEmployee(${employeeId})">➕</button>
-                `;
-                document.body.appendChild(menu);
-                var buttons = menu.querySelectorAll('.context-btn');
-                buttons.forEach(function(btn, index) {
+            var nodeElement = $(event.target).closest('[data-n-id]');
+            if (nodeElement.length) {
+                var employeeId = nodeElement.attr('data-n-id');
+                $('#context-menu').remove();
+                var menu = $('<div id="context-menu">').css({
+                    left: event.clientX + 'px',
+                    top: event.clientY + 'px'
+                }).html(`
+                <button class="context-btn" style="background:#f44336;" onclick="deleteEmployee(${employeeId})">🗑️</button>
+                <button class="context-btn" style="background:#2196F3;" onclick="editEmployee(${employeeId})">✏️</button>
+                <button class="context-btn" style="background:#4CAF50;" onclick="addEmployee(${employeeId})">➕</button>
+            `);
+                $('body').append(menu);
+                menu.find('.context-btn').each(function(index) {
+                    var btn = $(this);
                     setTimeout(function() {
-                        btn.classList.add('show');
+                        btn.addClass('show');
                     }, index * 100);
                 });
-                document.addEventListener('click', function() {
-                    var m = document.getElementById('context-menu');
-                    if (m) m.remove();
-                }, {
-                    once: true
+                $(document).one('click', function() {
+                    $('#context-menu').remove();
                 });
             }
         });
 
         // 4. إغلاق الموديل
         function closeModal() {
-            document.getElementById('addNodeModal').style.display = 'none';
-            document.getElementById('modalOverlay').style.display = 'none';
-            document.getElementById('new_name').value = "";
-            document.getElementById('new_title').value = "";
+            $('#addNodeModal, #modalOverlay').hide();
+            $('#new_name, #new_title').val('');
         }
 
         // 5. حفظ موظف من الموديل
         function saveNode() {
-            var name = document.getElementById('new_name').value;
-            var title = document.getElementById('new_title').value;
-            var pid = document.getElementById('parent_id').value;
-            if (name === "") {
-                alert("يا عمر لازم تكتب اسم الموظف!");
+            var name = $('#new_name').val();
+            var title = $('#new_title').val();
+            var pid = $('#parent_id').val();
+            if (name === '') {
+                alert('يا عمر لازم تكتب اسم الموظف!');
                 return;
             }
-            var employeeData = {
-                name: name,
-                title: title,
-                pid: pid,
-                img: "https://cdn.balkan.app/shared/3.jpg"
-            };
-            fetch('/api/employees', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(employeeData)
-                })
-                .then(response => {
-                    if (!response.ok) throw response;
-                    return response.json();
-                })
-                .then(data => {
+            $.ajax({
+                url: '/api/employees',
+                method: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                data: JSON.stringify({
+                    name: name,
+                    title: title,
+                    pid: pid,
+                    img: 'https://cdn.balkan.app/shared/3.jpg'
+                }),
+                success: function(data) {
                     chart.addNode(data.employee);
                     closeModal();
-                })
-                .catch(error => {
-                    console.error('غلط في التخزين يا عمر:', error);
-                    alert("حصلت مشكلة أثناء الحفظ.");
-                });
+                },
+                error: function(err) {
+                    console.error('غلط في التخزين يا عمر:', err);
+                    alert('حصلت مشكلة أثناء الحفظ.');
+                }
+            });
         }
 
         // 6. تغيير ثيم الشجرة
-        document.getElementById("theme-btn").addEventListener("click", function() {
+        $('#theme-btn').on('click', function() {
             Swal.fire({
-                title: "اختر قالب الشجرة",
-                input: "select",
+                title: 'اختر قالب الشجرة',
+                input: 'select',
                 inputOptions: {
                     "ana": "Ana",
                     "olivia": "Olivia",
@@ -222,25 +211,24 @@
                     "deborah": "Deborah",
                     "clara": "Clara"
                 },
-                confirmButtonText: "تغيير الثيم",
-                cancelButtonText: "الغاء",
+                confirmButtonText: 'تغيير الثيم',
+                cancelButtonText: 'الغاء',
                 showCancelButton: true,
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    var form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = '/save-theme';
-                    var csrf = document.createElement('input');
-                    csrf.type = 'hidden';
-                    csrf.name = '_token';
-                    csrf.value = document.querySelector('meta[name="csrf-token"]').content;
-                    var theme = document.createElement('input');
-                    theme.type = 'hidden';
-                    theme.name = 'tree_theme';
-                    theme.value = result.value;
-                    form.appendChild(csrf);
-                    form.appendChild(theme);
-                    document.body.appendChild(form);
+                    var form = $('<form>').attr({
+                        method: 'POST',
+                        action: '/save-theme'
+                    });
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: '_token'
+                    }).val($('meta[name="csrf-token"]').attr('content')));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: 'tree_theme'
+                    }).val(result.value));
+                    $('body').append(form);
                     form.submit();
                 }
             });
@@ -251,52 +239,48 @@
             Swal.fire({
                 title: 'إضافة موظف جديد',
                 html: `
-                    <div style="margin-top: 10px;">
-                        <label style="display: block; text-align: right; margin-bottom: 5px;">اسم الموظف:</label>
-                        <input id="swal-name" class="swal2-input" style="margin: 0; width: 80%;" placeholder="الاسم...">
-                    </div>
-                    <div style="margin-top: 15px;">
-                        <label style="display: block; text-align: right; margin-bottom: 5px;">الوظيفة:</label>
-                        <input id="swal-title" class="swal2-input" style="margin: 0; width: 80%;" placeholder="المسمى الوظيفي...">
-                    </div>
-                `,
+                <div style="margin-top: 10px;">
+                    <label style="display: block; text-align: right; margin-bottom: 5px;">اسم الموظف:</label>
+                    <input id="swal-name" class="swal2-input" style="margin: 0; width: 80%;" placeholder="الاسم...">
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="display: block; text-align: right; margin-bottom: 5px;">الوظيفة:</label>
+                    <input id="swal-title" class="swal2-input" style="margin: 0; width: 80%;" placeholder="المسمى الوظيفي...">
+                </div>
+            `,
                 showCancelButton: true,
                 confirmButtonText: 'حفظ الموظف',
                 cancelButtonText: 'إلغاء',
                 confirmButtonColor: '#4CAF50',
                 cancelButtonColor: '#d33',
                 preConfirm: () => {
-                    const name = document.getElementById('swal-name').value;
-                    const title = document.getElementById('swal-title').value;
+                    const name = $('#swal-name').val();
+                    const title = $('#swal-title').val();
                     if (!name) {
                         Swal.showValidationMessage('يا عمر لازم تكتب اسم الموظف!');
                         return false;
                     }
                     const randomId = Math.floor(Math.random() * 10) + 1;
                     return {
-                        name: name,
-                        title: title,
+                        name,
+                        title,
                         pid: nodeId,
                         img: `https://cdn.balkan.app/shared/${randomId}.jpg`
-                    }
+                    };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.showLoading();
-                    fetch('/api/employees', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify(result.value)
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error('مشكلة في السيرفر');
-                            return response.json();
-                        })
-                        .then(data => {
+                    $.ajax({
+                        url: '/api/employees',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        data: JSON.stringify(result.value),
+                        success: function(data) {
                             chart.addNode(data.employee);
                             Swal.fire({
                                 icon: 'success',
@@ -304,11 +288,11 @@
                                 timer: 1500,
                                 showConfirmButton: false
                             });
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
+                        },
+                        error: function() {
                             Swal.fire('فشل الحفظ', 'حصلت مشكلة في الاتصال بالسيرفر.', 'error');
-                        });
+                        }
+                    });
                 }
             });
         }
@@ -317,7 +301,7 @@
         function deleteEmployee(id) {
             Swal.fire({
                 title: 'هل أنت متأكد؟',
-                text: "الموظف ده هيتمسح نهائياً!",
+                text: 'الموظف ده هيتمسح نهائياً!',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -326,27 +310,26 @@
                 cancelButtonText: 'إلغاء'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/employees/delete/${id}`, {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
+                    $.ajax({
+                        url: `/employees/delete/${id}`,
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        success: function(data) {
                             if (data.success) {
                                 chart.removeNode(id);
                                 Swal.fire('تم الحذف!', 'اتمسح بنجاح.', 'success');
                             } else {
                                 Swal.fire('فشل!', 'حصلت مشكلة أثناء المسح.', 'error');
                             }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
+                        },
+                        error: function() {
                             Swal.fire('غلط!', 'مش قادر أتواصل مع السيرفر.', 'error');
-                        });
+                        }
+                    });
                 }
             });
         }
@@ -357,35 +340,44 @@
             Swal.fire({
                 title: 'تعديل بيانات الموظف',
                 html: `
-                    <div style="margin-top: 10px;">
-                        <label style="display: block; text-align: right;">الاسم</label>
-                        <input id="swal-name" class="swal2-input" value="${nodeData.name}">
-                    </div>
-                    <div style="margin-top: 15px;">
-                        <label style="display: block; text-align: right;">الوظيفة</label>
-                        <input id="swal-title" class="swal2-input" value="${nodeData.title}">
-                    </div>
-                `,
+                <div style="margin-top: 10px;">
+                    <label style="display: block; text-align: right;">الاسم</label>
+                    <input id="swal-name" class="swal2-input" value="${nodeData.name}">
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="display: block; text-align: right;">الوظيفة</label>
+                    <input id="swal-title" class="swal2-input" value="${nodeData.title}">
+                </div>
+            `,
                 showCancelButton: true,
                 confirmButtonText: 'حفظ التعديلات',
-                preConfirm: () => {
-                    return {
-                        name: document.getElementById('swal-name').value,
-                        title: document.getElementById('swal-title').value
-                    };
-                }
+                preConfirm: () => ({
+                    name: $('#swal-name').val(),
+                    title: $('#swal-title').val()
+                })
             }).then((result) => {
                 if (result.isConfirmed) {
-                    let form = document.createElement('form');
-                    form.action = `/employees/${id}`;
-                    form.method = 'POST';
-                    form.innerHTML = `
-                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
-                        <input type="hidden" name="_method" value="PUT">
-                        <input type="hidden" name="name" value="${result.value.name}">
-                        <input type="hidden" name="title" value="${result.value.title}">
-                    `;
-                    document.body.appendChild(form);
+                    var form = $('<form>').attr({
+                        action: `/employees/${id}`,
+                        method: 'POST'
+                    });
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: '_token'
+                    }).val($('meta[name="csrf-token"]').attr('content')));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: '_method'
+                    }).val('PUT'));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: 'name'
+                    }).val(result.value.name));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: 'title'
+                    }).val(result.value.title));
+                    $('body').append(form);
                     form.submit();
                 }
             });
@@ -413,25 +405,9 @@
         @endif
 
         // دوال التصدير
-        function exportToPDF() {
-            chart.exportToPDF({
-                filename: "OrgChart.pdf",
-                expandChildren: true,
-                header: 'شجرة الموظفين',
-                footer: 'Page {page-number} of {total-pages}'
-            });
-        }
-
         function exportCSV() {
             chart.exportCSV({
-                filename: "Employees_List.csv"
-            });
-        }
-
-        function exportSVG() {
-            chart.exportToSVG({
-                filename: "my-org-chart.svg",
-                expandChildren: true
+                filename: 'Employees_List.csv'
             });
         }
 
@@ -441,8 +417,8 @@
         // دالة اختيار الخلفية
         function openVantaMenu() {
             Swal.fire({
-                title: "اختر شكل الخلفية المتحركة",
-                input: "select",
+                title: 'اختر شكل الخلفية المتحركة',
+                input: 'select',
                 inputOptions: {
                     "birds": "الطيور (Birds)",
                     "fog": "الضباب (Fog)",
@@ -458,49 +434,41 @@
                     "rings": "الحلقات (Rings)",
                     "halo": "الهالة (Halo)"
                 },
-                confirmButtonText: "تطبيق",
-                cancelButtonText: "إلغاء",
+                confirmButtonText: 'تطبيق',
+                cancelButtonText: 'إلغاء',
                 showCancelButton: true,
                 confirmButtonColor: '#2196f3'
             }).then(function(result) {
                 if (result.isConfirmed && result.value) {
-
-                    // مسح الخلفية القديمة
                     if (vantaEffect) {
                         try {
                             vantaEffect.destroy();
                         } catch (err) {
-                            console.warn("Couldn't destroy vanta:", err);
+                            console.warn(err);
                         }
-                        document.getElementById("vanta-bg").innerHTML = "";
+                        $('#vanta-bg').empty();
                     }
-
-                    const effectKey = result.value;
-
-                    // تشغيل الخلفية الجديدة
-                    vantaEffect = VANTA[effectKey.toUpperCase()]({
-                        el: "#vanta-bg",
+                    vantaEffect = VANTA[result.value.toUpperCase()]({
+                        el: '#vanta-bg',
                         mouseControls: true,
                         touchControls: true,
                         gyroControls: false,
-                        minHeight: 200.00,
-                        minWidth: 200.00,
-                        scale: 1.00,
-                        scaleMobile: 1.00,
+                        minHeight: 200,
+                        minWidth: 200,
+                        scale: 1,
+                        scaleMobile: 1,
                         color: 0x2196f3,
                         backgroundColor: 0x232323
                     });
-
-                    // حفظ الخلفية في الداتا بيز
-                    // حفظ الخلفية في الداتا بيز
-                    fetch('/save-vanta-theme', {
+                    $.ajax({
+                        url: '/save-vanta-theme',
                         method: 'POST',
+                        contentType: 'application/json',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
-                        body: JSON.stringify({
-                            vanta_theme: effectKey
+                        data: JSON.stringify({
+                            vanta_theme: result.value
                         })
                     });
                 }
@@ -508,51 +476,491 @@
         }
 
         // ربط زرار الثيم
-        document.getElementById("vanta-btn").addEventListener("click", function(e) {
+        $('#vanta-btn').on('click', function(e) {
             e.preventDefault();
             openVantaMenu();
         });
 
         // السحب والإفلات للمنيو
-        const menu = document.querySelector('.menu');
-        let isDragging = false;
-        let offsetX, offsetY;
+        var isDragging = false,
+            offsetX, offsetY;
+        var $menu = $('.menu');
 
-        menu.addEventListener('mousedown', function(e) {
+        $menu.on('mousedown', function(e) {
             isDragging = true;
-            offsetX = e.clientX - menu.getBoundingClientRect().left;
-            offsetY = e.clientY - menu.getBoundingClientRect().top;
-            menu.style.cursor = 'grabbing';
+            offsetX = e.clientX - $menu.offset().left;
+            offsetY = e.clientY - $menu.offset().top;
+            $menu.css('cursor', 'grabbing');
         });
 
-        document.addEventListener('mousemove', function(e) {
+        $(document).on('mousemove', function(e) {
             if (!isDragging) return;
-            menu.style.right = 'auto';
-            menu.style.left = (e.clientX - offsetX) + 'px';
-            menu.style.top = (e.clientY - offsetY) + 'px';
+            $menu.css({
+                right: 'auto',
+                left: (e.clientX - offsetX) + 'px',
+                top: (e.clientY - offsetY) + 'px'
+            });
         });
 
-        document.addEventListener('mouseup', function() {
+        $(document).on('mouseup', function() {
             isDragging = false;
-            menu.style.cursor = 'grab';
+            $menu.css('cursor', 'grab');
         });
 
         // تشغيل الخلفية المحفوظة عند فتح الصفحة
-        // تشغيل الخلفية المحفوظة عند فتح الصفحة
-        const savedVanta = "{{\App\Models\User::first()->vanta_theme ?? 'none' }}";
+        const savedVanta = "{{ \App\Models\User::first()->vanta_theme ?? 'none' }}";
         if (savedVanta !== 'none') {
-            document.addEventListener('DOMContentLoaded', function() {
+            $(document).ready(function() {
                 setTimeout(function() {
                     vantaEffect = VANTA[savedVanta.toUpperCase()]({
-                        el: "#vanta-bg",
+                        el: '#vanta-bg',
                         THREE: THREE,
                         mouseControls: true,
                         touchControls: true,
                         gyroControls: false,
-                        minHeight: 200.00,
-                        minWidth: 200.00,
-                        scale: 1.00,
-                        scaleMobile: 1.00,
+                        minHeight: 200,
+                        minWidth: 200,
+                        scale: 1,
+                        scaleMobile: 1,
+                        color: 0x2196f3,
+                        backgroundColor: 0x232323
+                    });
+                }, 500);
+            });
+        }
+    </script>
+
+    <script>
+        // 1. بيانات الموظفين
+        const employees = @json($employees);
+        console.log('بيانات الموظفين من الداتا بيز:', employees);
+
+        // 2. إعداد الشجرة
+        var chart = new OrgChart(document.getElementById("tree"), {
+            template: "{{ $user->tree_theme ?? 'belinda' }}",
+            nodeBinding: {
+                field_0: "name",
+                field_1: "title",
+                img_0: "img"
+            },
+            nodes: [
+                @foreach ($employees as $employee)
+                    {
+                        id: {{ $employee->id }},
+                        name: "{{ $employee->name }}",
+                        title: "{{ $employee->title }}",
+                        img: "{{ $employee->img }}",
+                        pid: {{ $employee->pid ?? 'null' }}
+                    },
+                @endforeach
+            ],
+            menuButton: {
+                text: "إضافة",
+                onClick: function(nodeId) {
+                    $('#parent_id').val(nodeId);
+                    $('#addNodeModal, #modalOverlay').show();
+                }
+            }
+        });
+
+        // 3. كليك يمين
+        $('#tree').on('contextmenu', function(event) {
+            event.preventDefault();
+            var nodeElement = $(event.target).closest('[data-n-id]');
+            if (nodeElement.length) {
+                var employeeId = nodeElement.attr('data-n-id');
+                $('#context-menu').remove();
+                var menu = $('<div id="context-menu">').css({
+                    left: event.clientX + 'px',
+                    top: event.clientY + 'px'
+                }).html(`
+                <button class="context-btn" style="background:#f44336;" onclick="deleteEmployee(${employeeId})">🗑️</button>
+                <button class="context-btn" style="background:#2196F3;" onclick="editEmployee(${employeeId})">✏️</button>
+                <button class="context-btn" style="background:#4CAF50;" onclick="addEmployee(${employeeId})">➕</button>
+            `);
+                $('body').append(menu);
+                menu.find('.context-btn').each(function(index) {
+                    var btn = $(this);
+                    setTimeout(function() {
+                        btn.addClass('show');
+                    }, index * 100);
+                });
+                $(document).one('click', function() {
+                    $('#context-menu').remove();
+                });
+            }
+        });
+
+        // 4. إغلاق الموديل
+        function closeModal() {
+            $('#addNodeModal, #modalOverlay').hide();
+            $('#new_name, #new_title').val('');
+        }
+
+        // 5. حفظ موظف من الموديل
+        function saveNode() {
+            var name = $('#new_name').val();
+            var title = $('#new_title').val();
+            var pid = $('#parent_id').val();
+            if (name === '') {
+                alert('يا عمر لازم تكتب اسم الموظف!');
+                return;
+            }
+            $.ajax({
+                url: '/api/employees',
+                method: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                data: JSON.stringify({
+                    name: name,
+                    title: title,
+                    pid: pid,
+                    img: 'https://cdn.balkan.app/shared/3.jpg'
+                }),
+                success: function(data) {
+                    chart.addNode(data.employee);
+                    closeModal();
+                },
+                error: function(err) {
+                    console.error('غلط في التخزين يا عمر:', err);
+                    alert('حصلت مشكلة أثناء الحفظ.');
+                }
+            });
+        }
+
+        // 6. تغيير ثيم الشجرة
+        $('#theme-btn').on('click', function() {
+            Swal.fire({
+                title: 'اختر قالب الشجرة',
+                input: 'select',
+                inputOptions: {
+                    "ana": "Ana",
+                    "olivia": "Olivia",
+                    "diva": "Diva",
+                    "mila": "Mila",
+                    "polina": "Polina",
+                    "mery": "Mery",
+                    "rony": "Rony",
+                    "belinda": "Belinda",
+                    "ula": "Ula",
+                    "isla": "Isla",
+                    "deborah": "Deborah",
+                    "clara": "Clara"
+                },
+                confirmButtonText: 'تغيير الثيم',
+                cancelButtonText: 'الغاء',
+                showCancelButton: true,
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    var form = $('<form>').attr({
+                        method: 'POST',
+                        action: '/save-theme'
+                    });
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: '_token'
+                    }).val($('meta[name="csrf-token"]').attr('content')));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: 'tree_theme'
+                    }).val(result.value));
+                    $('body').append(form);
+                    form.submit();
+                }
+            });
+        });
+
+        // 7. إضافة موظف بـ SweetAlert
+        function addEmployee(nodeId) {
+            Swal.fire({
+                title: 'إضافة موظف جديد',
+                html: `
+                <div style="margin-top: 10px;">
+                    <label style="display: block; text-align: right; margin-bottom: 5px;">اسم الموظف:</label>
+                    <input id="swal-name" class="swal2-input" style="margin: 0; width: 80%;" placeholder="الاسم...">
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="display: block; text-align: right; margin-bottom: 5px;">الوظيفة:</label>
+                    <input id="swal-title" class="swal2-input" style="margin: 0; width: 80%;" placeholder="المسمى الوظيفي...">
+                </div>
+            `,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ الموظف',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#d33',
+                preConfirm: () => {
+                    const name = $('#swal-name').val();
+                    const title = $('#swal-title').val();
+                    if (!name) {
+                        Swal.showValidationMessage('يا عمر لازم تكتب اسم الموظف!');
+                        return false;
+                    }
+                    const randomId = Math.floor(Math.random() * 10) + 1;
+                    return {
+                        name,
+                        title,
+                        pid: nodeId,
+                        img: `https://cdn.balkan.app/shared/${randomId}.jpg`
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.showLoading();
+                    $.ajax({
+                        url: '/api/employees',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        data: JSON.stringify(result.value),
+                        success: function(data) {
+                            chart.addNode(data.employee);
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'تمت الإضافة!',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        },
+                        error: function() {
+                            Swal.fire('فشل الحفظ', 'حصلت مشكلة في الاتصال بالسيرفر.', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        // 8. حذف موظف
+        function deleteEmployee(id) {
+            Swal.fire({
+                title: 'هل أنت متأكد؟',
+                text: 'الموظف ده هيتمسح نهائياً!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'أيوه، امسحه!',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/employees/delete/${id}`,
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        success: function(data) {
+                            if (data.success) {
+                                chart.removeNode(id);
+                                Swal.fire('تم الحذف!', 'اتمسح بنجاح.', 'success');
+                            } else {
+                                Swal.fire('فشل!', 'حصلت مشكلة أثناء المسح.', 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('غلط!', 'مش قادر أتواصل مع السيرفر.', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        // 9. تعديل موظف
+        function editEmployee(id) {
+            var nodeData = chart.get(id);
+            Swal.fire({
+                title: 'تعديل بيانات الموظف',
+                html: `
+                <div style="margin-top: 10px;">
+                    <label style="display: block; text-align: right;">الاسم</label>
+                    <input id="swal-name" class="swal2-input" value="${nodeData.name}">
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="display: block; text-align: right;">الوظيفة</label>
+                    <input id="swal-title" class="swal2-input" value="${nodeData.title}">
+                </div>
+            `,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ التعديلات',
+                preConfirm: () => ({
+                    name: $('#swal-name').val(),
+                    title: $('#swal-title').val()
+                })
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var form = $('<form>').attr({
+                        action: `/employees/${id}`,
+                        method: 'POST'
+                    });
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: '_token'
+                    }).val($('meta[name="csrf-token"]').attr('content')));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: '_method'
+                    }).val('PUT'));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: 'name'
+                    }).val(result.value.name));
+                    form.append($('<input>').attr({
+                        type: 'hidden',
+                        name: 'title'
+                    }).val(result.value.title));
+                    $('body').append(form);
+                    form.submit();
+                }
+            });
+        }
+    </script>
+
+    <script>
+        // رسائل النجاح والخطأ
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'عاش يا وحش',
+                text: "{{ session('success') }}",
+                timer: 2500,
+                showConfirmButton: false
+            });
+        @endif
+
+        @if (session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'أوبس..',
+                text: "{{ session('error') }}",
+            });
+        @endif
+
+        // دوال التصدير
+        function exportCSV() {
+            chart.exportCSV({
+                filename: 'Employees_List.csv'
+            });
+        }
+
+        // متغير الخلفية
+        let vantaEffect = null;
+
+        // دالة اختيار الخلفية
+        function openVantaMenu() {
+            Swal.fire({
+                title: 'اختر شكل الخلفية المتحركة',
+                input: 'select',
+                inputOptions: {
+                    "birds": "الطيور (Birds)",
+                    "fog": "الضباب (Fog)",
+                    "waves": "الموجات (Waves)",
+                    "clouds": "السحب (Clouds)",
+                    "clouds2": "السحب 2 (Clouds2)",
+                    "globe": "الكرة الأرضية (Globe)",
+                    "net": "الشبكة (Net)",
+                    "cells": "الخلايا (Cells)",
+                    "trunk": "الجذوع (Trunk)",
+                    "topology": "التضاريس (Topology)",
+                    "dots": "النقط (Dots)",
+                    "rings": "الحلقات (Rings)",
+                    "halo": "الهالة (Halo)"
+                },
+                confirmButtonText: 'تطبيق',
+                cancelButtonText: 'إلغاء',
+                showCancelButton: true,
+                confirmButtonColor: '#2196f3'
+            }).then(function(result) {
+                if (result.isConfirmed && result.value) {
+                    if (vantaEffect) {
+                        try {
+                            vantaEffect.destroy();
+                        } catch (err) {
+                            console.warn(err);
+                        }
+                        $('#vanta-bg').empty();
+                    }
+                    vantaEffect = VANTA[result.value.toUpperCase()]({
+                        el: '#vanta-bg',
+                        mouseControls: true,
+                        touchControls: true,
+                        gyroControls: false,
+                        minHeight: 200,
+                        minWidth: 200,
+                        scale: 1,
+                        scaleMobile: 1,
+                        color: 0x2196f3,
+                        backgroundColor: 0x232323
+                    });
+                    $.ajax({
+                        url: '/save-vanta-theme',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        data: JSON.stringify({
+                            vanta_theme: result.value
+                        })
+                    });
+                }
+            });
+        }
+
+        // ربط زرار الثيم
+        $('#vanta-btn').on('click', function(e) {
+            e.preventDefault();
+            openVantaMenu();
+        });
+
+        // السحب والإفلات للمنيو
+        var isDragging = false,
+            offsetX, offsetY;
+        var $menu = $('.menu');
+
+        $menu.on('mousedown', function(e) {
+            isDragging = true;
+            offsetX = e.clientX - $menu.offset().left;
+            offsetY = e.clientY - $menu.offset().top;
+            $menu.css('cursor', 'grabbing');
+        });
+
+        $(document).on('mousemove', function(e) {
+            if (!isDragging) return;
+            $menu.css({
+                right: 'auto',
+                left: (e.clientX - offsetX) + 'px',
+                top: (e.clientY - offsetY) + 'px'
+            });
+        });
+
+        $(document).on('mouseup', function() {
+            isDragging = false;
+            $menu.css('cursor', 'grab');
+        });
+
+        // تشغيل الخلفية المحفوظة عند فتح الصفحة
+        const savedVanta = "{{ \App\Models\User::first()->vanta_theme ?? 'none' }}";
+        if (savedVanta !== 'none') {
+            $(document).ready(function() {
+                setTimeout(function() {
+                    vantaEffect = VANTA[savedVanta.toUpperCase()]({
+                        el: '#vanta-bg',
+                        THREE: THREE,
+                        mouseControls: true,
+                        touchControls: true,
+                        gyroControls: false,
+                        minHeight: 200,
+                        minWidth: 200,
+                        scale: 1,
+                        scaleMobile: 1,
                         color: 0x2196f3,
                         backgroundColor: 0x232323
                     });
