@@ -6,8 +6,9 @@ A dynamic web application built with **Laravel** to visualize and manage organiz
 
 ## 🔗 Live Demo
 You can try the live version of the project here:  
-👉 **[Live Demo Link Here]** *(Note: Please replace the placeholder above with your actual deployment link once hosted.)*
+👉 **[Live Demo](http://omar-soft.free.nf/)**
 
+---
 ---
 
 ## 🚀 Key Features
