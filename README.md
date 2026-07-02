@@ -4,13 +4,6 @@ A dynamic web application built with **Laravel** to visualize and manage organiz
 
 ---
 
-## 🔗 Live Demo
-You can try the live version of the project here:  
-👉 **[Live Demo](http://omar-soft.free.nf/)**
-
----
----
-
 ## 🚀 Key Features
 
 * **Dynamic Org Chart**: Visualizes employee relationships directly from the MySQL database using **BalkanGraph**.
